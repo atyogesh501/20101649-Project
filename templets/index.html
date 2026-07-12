@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Team Connect - Smart Room Booking{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Manage your rooms and reservations{% endblock %}
+
+{% block guest %}
+<!-- ==================== LOGIN LANDING ==================== -->
+<main id="login-section">
+  <h1>Team Connect</h1>
+  <p>Smart meeting-room booking. Reserve rooms around the clock, avoid clashes
+  automatically, and let Connect create, book, cancel and reschedule for you.</p>
+
+  <section id="signin">
+    <h2>Welcome back</h2>
+    <p>Sign in with your Google account to manage your bookings.</p>
+    <button id="google-signin-btn" type="button">Continue with Google</button>
+    <p id="login-error"></p>
+  </section>
+
+  <section>
+    <h2>Features</h2>
+    <ul>
+      <li>24-hour booking - reserve rooms at any hour, no 9-to-6 limits.</li>
+      <li>Clash-free scheduling - every booking is checked against existing reservations.</li>
+      <li>Create and manage rooms you own.</li>
+      <li>Occupancy insights and free-slot suggestions.</li>
+      <li>Secure Google sign-in via Firebase.</li>
+    </ul>
+  </section>
+</main>
+{% endblock %}
+
+{% block content %}
+<div id="page-error" role="alert"></div>
+
+<section aria-labelledby="add-room-heading">
+  <h3 id="add-room-heading">Add New Room</h3>
+  <form id="add-room-form">
+    <p>
+      <label for="room_name">Room Name</label><br />
+      <input type="text" id="room_name" name="room_name" required placeholder="e.g., Conference Room A" />
+    </p>
+    <button type="submit">Add Room</button>
+  </form>
+  <p id="add-room-error" role="alert"></p>
+</section>
+
+<hr />
+
+<section aria-labelledby="book-room-heading">
+  <h3 id="book-room-heading">Book a Room</h3>
+  <form id="booking-form">
+    <p>
+      <label for="book-meeting-name">Meeting Name</label><br />
+      <input type="text" id="book-meeting-name" name="meeting_name" required maxlength="80" placeholder="e.g., Sprint Planning" />
+    </p>
+    <p>
+      <label for="book-room-select">Select Room</label><br />
+      <select id="book-room-select" name="room_id" required>
+        <option value="">Choose a room...</option>
+        {% for room in rooms %}
+        <option value="{{ room._id }}">{{ room.name }}</option>
+        {% endfor %}
+      </select>
