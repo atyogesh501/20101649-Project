@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Team Connect{% endblock %}</title>
+    {% block head_extra %}{% endblock %}
+  </head>
+  <body>
+    {% if not user %}
+      {% block guest %}{% endblock %}
+    {% else %}
+    <header>
+      <h1>Team Connect</h1>
+      <p>Smart room booking</p>
+      <nav aria-label="Primary">
+        <ul>
+          <li><a href="/">Dashboard</a></li>
+          <li><a href="/profile">My Profile</a></li>
+          <li><a href="/about">About &amp; Guide</a></li>
+        </ul>
+      </nav>
+      <p>
+        Signed in as {{ user.display_name or user.name }} ({{ user.email }})
+        <button id="logout-btn" type="button">Sign out</button>
+      </p>
+    </header>
+
+    <main>
+      <h2>{% block page_title %}Dashboard{% endblock %}</h2>
+      <p>{% block page_subtitle %}{% endblock %}</p>
+      {% block content %}{% endblock %}
+    </main>
+
+    {% endif %}
+
+    <!-- Toast / status messages -->
+    <div id="toast-container" role="status" aria-live="polite"></div>
+
+    <script type="module" src="/static/firebase-login.js"></script>
+    <script>
+      // Simple, unstyled status message helper reused across pages.
+      function showToast(message, type) {
+        var container = document.getElementById('toast-container');
+        if (!container) return;
+        var line = document.createElement('p');
+        line.textContent = (type === 'error' ? 'Error: ' : '') + message;
+        container.appendChild(line);
+        setTimeout(function () {
+          line.remove();
+        }, 4000);
+      }
+    </script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>
