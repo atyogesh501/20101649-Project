@@ -80,3 +80,36 @@ def get_user_data():
     user["photo_url"] = profile.get("photo_url")
     user["display_name"] = profile.get("display_name", user["name"])
     return user
+
+
+# ==================== USER PROFILE / STATS ====================
+
+def get_user_profile(user_id: str, email: str = "", name: str = ""):
+    """Fetch or lazily create a user profile document holding stats + photo."""
+    ref = users_collection.document(user_id)
+    snap = ref.get()
+    if snap.exists:
+        return snap.to_dict()
+    profile = {
+        "user_id": user_id,
+        "email": email,
+        "display_name": name or email or "User",
+        "photo_url": None,
+        "rooms_created": 0,
+        "rooms_deleted": 0,
+        "bookings_created": 0,
+        "bookings_deleted": 0,
+        "bookings_edited": 0,
+        "created_at": datetime.now().isoformat(),
+    }
+    ref.set(profile)
+    return profile
+
+
+def bump_stat(user_id: str, field: str, amount: int = 1):
+    try:
+        users_collection.document(user_id).set(
+            {field: firestore.Increment(amount)}, merge=True
+        )
+    except Exception as e:
+        print(f"Failed to bump stat {field}: {e}")
