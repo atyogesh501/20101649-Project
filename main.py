@@ -1,19 +1,32 @@
 import os
 import uuid
+import json
+import base64
 
 from flask import Flask, request, render_template, redirect, url_for, jsonify
 import google.oauth2.id_token
 from google.auth.transport import requests
 from datetime import datetime, timedelta
+from google.oauth2 import service_account
 
 from google.cloud import firestore, storage
 from google.auth.exceptions import DefaultCredentialsError
 from google.cloud.firestore_v1.base_query import FieldFilter
 
 
-app = Flask(__name__, static_folder="static", template_folder="templates")
+app = Flask(__name__, static_folder="static", template_folder="templets")
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "firestoreDetails.json"
+gcpKey="ewogICJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIsCiAgInByb2plY3RfaWQiOiAiYm9vbWluZy1vcmRlci00OTc2MTEtZjgiLAogICJwcml2YXRlX2tleV9pZCI6ICI1ZWY5YTA4OWI3YjhjYTUwNzIyMmQ5MmE1ZGNjN2QyYjYzYWRjN2ExIiwKICAicHJpdmF0ZV9rZXkiOiAiLS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tXG5NSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUUMyTkdiVG1mT0RtQTlnXG42aFphQ2ZNdlRZeWt6UHh1OTFzd2dTaEQ2SWhKZ3oxNXFkQXk5dG13QWdRZTRFM3g1N1B3RmIxRXdEd2pGeG92XG5YYmxrMDhycDBxZThHS1Nhck5MWmlpck9BQVhSR0tGd0U5WC9BbmNwUnVMNVM5UWd2ZVIyeGpIMVhlckF2a1ZpXG5sN2pyZCtDRVVYRWQyRnVkYk5jMGwzUVQvTTZpVmpmZDZrajM0elNHSGsyTTlHR1d6d0xKT1RTZVFheFJIYWVlXG40ZjB2QS84WFlicXNUWEZiY041dVR4d3FvUS9TVVZ6c2dDRWtYenBJeWFadFYxMDNYK2JuWGtabHcvUnZHbjJIXG40LzBPaVRwMnhITmFFbXJJYU5XY25OakdUZWdDb09MT1RrNUhYdFlGblZaZUVaZXZDMXZ2dGpxQUxnL1B3MW5TXG5Rb1VDOEJ0ZkFnTUJBQUVDZ2dFQUM0OWJqc1ZQdStPajVpUXo4dFo2eFYrSU10U0dsNHUrRDEvQ2JEeU9tUXRvXG5sUlYvRGh5M1J3RjV2WFBCdmoxVEgwSmgxY0RVaisxaFRld0dYUzFLekhiL0NXSU8zM2xqajBYQzNYc0c0M05LXG5tcy9IWGZ5TUR1UmVkaTZuY01SYmdHV211Y2lSb2xUd0ZnZEdSam8rMW1aTVpQWmJLYXZFSTZRUVMweFkxOWZCXG5BYlMwVExwcXRjV3p5TjQwTFlWUUlZSmdhY01Vc1hyRjJPZ0ZaZUc4bmJzcmNEa2hCYnY5dWw0dEVmWkU4VG1QXG5JcnlCVFh5NVJNbXU2NnhlVndxKzBvV1d0YysydDBjTFpkL2VCOVJUOTAwOTJxTm9ZMVJadUtITThuUXYyRjRLXG5GbDJBOGtGTk5CcWNya2RMNXFpcmlZdTRkU1ZvOFdsY0Z3VlBqbkFBb1FLQmdRRHM5WUd4TEU1Vi9zcWZSdUFNXG53R0xhaFFsRitEU0R0akdMOWNxWm1xMFRaTkJQeHF4bHh2eVZ2Rk9hcVpTVzRNc01GUElmN2djTCtnbDFGenhKXG5HRUYxb1c0SCtuVG1DYTJ4Njd5SzVYa2RxUEgzYmJJQ3pMNHRzVXZVMjBHSHY2dnFzdWFWRmVrZXc4ajN2eGp4XG44Z0ZIQ3FXUlhiUXNadkRhdTgvMkIrMWw1d0tCZ1FERTJJcXppU3JDc0M3RVp6UW94WldOYndIaVU1VFRtMU1YXG5YdGt2dnNCcTdnNVVKM2pUZi9PRVJXSGQyUUl5UzJJWGNVQXVLRTRwQ3ZlZk5xQnZKOHQxQXl4aHJFeHdHdkUvXG5qREVPY0ZZd2gxQmhsR0UwZDM4QVJUdzdNTXYxR1ZnUTFSNmZlUHlWVHVTeXlwQVlBdklPMlFzZWpaemFmanF6XG5SaU5Zc1diL3lRS0JnREdtYjNwVU1rWEtrV0kyVTVQWWE5NGxxZi9ETmgyeSswYThSYXRSd1pvaXNaTkZxYkhaXG5zK3NiL3RpVlY5RVZZUFl6SFZpYlkxYWJHWWd6U2lwMnJxQ2JKcGI5WDZranRnVmx3NmZHMVUzbHJHMlB5cERUXG5uYld0UkpwaEpxWHUvM0s1OFo2amJLbEpsTDUwaUNHSjk4S085SW8wL0IraG9pM3kxR3hVMU9WWkFvR0FXMC9iXG4zM2EwcUVWVUhIV0hZNVpzVG9SOUNrRWRXNS9FeHFXUCtDN3pVV2NHckpEMjRwMkxHQU9iWjI3Z0x2WjdGVWJLXG5yOTZ3aXlkMFFKMzFoRHFnamJJZ0oxcm14bVlwSFFKcVN6bGZNZm5ERnREZTJwaklDQmNWM3BzL01YNUZOT0czXG41K0FXd3lncXZLbHNlRWI5aEZlNGFiN2xVUkdYSjB4VTN6TEVCY2tDZ1lFQXYrUmVXTjJEUHVFTDZVeWhLbkh3XG56MXFRTjdkK0o3NHRrRlh2YTl6WnY0bnZaeksvdHdOdm14bVhUVWNMTUMzTzFWNkQ1VzFWT3dxbUFRcU5LYXZwXG5mRGZhL2IwZE5QKzZGaGkxdTVMaHU2TTJ2UlhwbDYzRkdLdFdqbHpWSWIvZUZnL2lXQXp1b3FNVGw5S1dSb2Z1XG41VStTQ0pZaEFMcjZvTzNBbjhLT2Rhbz1cbi0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS1cbiIsCiAgImNsaWVudF9lbWFpbCI6ICJib29taW5nLW9yZGVyLTQ5NzYxMS1mOEBhcHBzcG90LmdzZXJ2aWNlYWNjb3VudC5jb20iLAogICJjbGllbnRfaWQiOiAiMTA5OTM1Mzc4MTg5OTE5MTIzMDM2IiwKICAiYXV0aF91cmkiOiAiaHR0cHM6Ly9hY2NvdW50cy5nb29nbGUuY29tL28vb2F1dGgyL2F1dGgiLAogICJ0b2tlbl91cmkiOiAiaHR0cHM6Ly9vYXV0aDIuZ29vZ2xlYXBpcy5jb20vdG9rZW4iLAogICJhdXRoX3Byb3ZpZGVyX3g1MDlfY2VydF91cmwiOiAiaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vb2F1dGgyL3YxL2NlcnRzIiwKICAiY2xpZW50X3g1MDlfY2VydF91cmwiOiAiaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vcm9ib3QvdjEvbWV0YWRhdGEveDUwOS9ib29taW5nLW9yZGVyLTQ5NzYxMS1mOCU0MGFwcHNwb3QuZ3NlcnZpY2VhY2NvdW50LmNvbSIsCiAgInVuaXZlcnNlX2RvbWFpbiI6ICJnb29nbGVhcGlzLmNvbSIKfQo="
+
+
+service_account_info = json.loads(
+    base64.b64decode(gcpKey).decode("utf-8")
+)
+
+
+credentials = service_account.Credentials.from_service_account_info(
+    service_account_info
+)
 
 STORAGE_BUCKET = "booming-order-497611-f8.appspot.com"
 
@@ -24,7 +37,11 @@ DAY_TOTAL_MINUTES = 24 * 60
 
 def get_firestore():
     try:
-        return firestore.Client()
+        return firestore.Client(
+            project=service_account_info["project_id"],
+            credentials=credentials,
+
+        )
     except DefaultCredentialsError:
         print("Firestore credentials are missing! Please set up your credentials.")
         return None
@@ -35,7 +52,10 @@ def get_firestore():
 
 def get_storage_client():
     try:
-        return storage.Client()
+        return storage.Client(
+            project=service_account_info["project_id"],
+            credentials=credentials
+        )
     except Exception as e:
         print(f"Storage client error: {e}")
         return None
@@ -690,7 +710,7 @@ def about_page():
             "bookings": total_bookings,
             "users": total_users,
         },
-    ,)
+    )
 
 
 @app.route("/upload-photo", methods=["POST"])
@@ -785,7 +805,6 @@ def room_graph(room_id):
         "bookings": items,
         "free_slots": free,
     })
-
 
 
 if __name__ == "__main__":
