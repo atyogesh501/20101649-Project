@@ -65,3 +65,18 @@ def get_user_token():
         except ValueError as e:
             print("Error verifying Firebase token:", e)
     return None
+
+def get_user_data():
+    user_token = get_user_token()
+    if not user_token:
+        return None
+    user = {
+        "user_id": user_token.get("user_id"),
+        "email": user_token.get("email"),
+        "name": user_token.get("name", user_token.get("email", "User")),
+    }
+    # Merge in stored profile (photo + display name)
+    profile = get_user_profile(user["user_id"], user["email"], user["name"])
+    user["photo_url"] = profile.get("photo_url")
+    user["display_name"] = profile.get("display_name", user["name"])
+    return user
