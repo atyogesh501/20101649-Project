@@ -668,3 +668,25 @@ def profile_page():
         recent_bookings=my_bookings[:8],
     )
 
+
+# ==================== ABOUT ====================
+
+@app.route("/about", methods=["GET"])
+def about_page():
+    user = get_user_data()
+    if not user:
+        return redirect(url_for("home"), code=303)
+
+    # Live totals so the About page reflects real usage.
+    total_rooms = len(list(rooms_collection.stream()))
+    total_bookings = len(list(bookings_collection.stream()))
+    total_users = len(list(users_collection.stream()))
+
+    return render_template(
+        "about.html",
+        user=user,
+        totals={
+            "rooms": total_rooms,
+            "bookings": total_bookings,
+            "users": total_users,
+        },
