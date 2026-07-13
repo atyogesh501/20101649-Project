@@ -365,3 +365,35 @@ def home():
     user = get_user_data()
     rooms = [doc_to_dict(doc) for doc in rooms_collection.stream()]
     return render_template("index.html", user=user, rooms=rooms)
+
+
+@app.route("/add-room", methods=["POST"])
+def add_room():
+    user = get_user_data()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    room_name = (request.form.get("room_name", "") or "").strip()
+    if not room_name:
+        return jsonify({"error": "Please enter a room name"}), 400
+
+    existing = list(rooms_collection.where(filter=FieldFilter("name", "==", room_name)).limit(1).stream())
+    if existing:
+        return jsonify({"error": "A room with this name already exists!"}), 400
+
+    _, ref = rooms_collection.add({
+        "name": room_name,
+        "created_by": user["user_id"],
+        "created_by_email": user["email"],
+        "created_at": datetime.now().isoformat(),
+    })
+    bump_stat(user["user_id"], "rooms_created")
+    return jsonify({
+        "success": True,
+        "room": {
+            "_id": ref.id,
+            "name": room_name,
+            "created_by": user["user_id"],
+            "created_by_email": user["email"],
+        },
+    })
