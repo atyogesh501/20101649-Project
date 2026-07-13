@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% set active_nav = 'profile' %}
+
+{% block title %}My Profile - Team Connect{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+{% block page_subtitle %}Your account, activity and booking stats{% endblock %}
+
+{% block content %}
+<section aria-labelledby="identity-heading">
+  <h3 id="identity-heading">Account</h3>
+  <div id="avatar-wrap">
+    {% if profile.photo_url %}
+    <img id="avatar-img" src="{{ profile.photo_url }}" alt="Profile picture" width="96" height="96" />
+    {% else %}
+    <p id="avatar-initials">No profile picture yet.</p>
+    {% endif %}
+  </div>
+
+  <p>
+    <label for="photo-input">Change photo</label><br />
+    <input type="file" id="photo-input" accept="image/png,image/jpeg,image/webp,image/gif" onchange="uploadPhoto(this)" />
+  </p>
+
+  <p>Display name: <span id="display-name-text">{{ profile.display_name or user.name }}</span>
+    <button type="button" onclick="toggleNameEdit(true)">Edit name</button>
+  </p>
+  <p>Email: {{ user.email }}</p>
+  <p>Member since {{ (profile.created_at or "")[:10] }}</p>
+
+  <form id="name-form" hidden onsubmit="saveName(event)">
+    <p>
+      <label for="display-name-input">New display name</label><br />
+      <input id="display-name-input" type="text" value="{{ profile.display_name or user.name }}" maxlength="60" required />
+    </p>
+    <button type="submit">Save</button>
+    <button type="button" onclick="toggleNameEdit(false)">Cancel</button>
+  </form>
+</section>
+
+<hr />
+
+<section aria-labelledby="stats-heading">
+  <h3 id="stats-heading">Activity overview</h3>
+  <table>
+    <tbody>
+      <tr><th scope="row">Rooms created</th><td>{{ stats.rooms_created }}</td></tr>
+      <tr><th scope="row">Rooms deleted</th><td>{{ stats.rooms_deleted }}</td></tr>
+      <tr><th scope="row">Bookings made</th><td>{{ stats.bookings_created }}</td></tr>
+      <tr><th scope="row">Bookings edited</th><td>{{ stats.bookings_edited }}</td></tr>
+      <tr><th scope="row">Bookings deleted</th><td>{{ stats.bookings_deleted }}</td></tr>
+      <tr><th scope="row">Active rooms</th><td>{{ stats.active_rooms }}</td></tr>
+      <tr><th scope="row">Active bookings</th><td>{{ stats.active_bookings }}</td></tr>
+      <tr><th scope="row">Upcoming</th><td>{{ stats.upcoming_bookings }}</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<hr />
+
+<section aria-labelledby="my-rooms-heading">
+  <h3 id="my-rooms-heading">Rooms I created ({{ my_rooms|length }})</h3>
+  {% if my_rooms %}
+  <ul>
+    {% for room in my_rooms %}
+    <li>
+      <a href="/room/{{ room._id }}">{{ room.name }}</a> - created {{ (room.created_at or "")[:10] }}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>You have not created any rooms yet.</p>
+  {% endif %}
+</section>
+
+<hr />
+
+<section aria-labelledby="recent-bookings-heading">
+  <h3 id="recent-bookings-heading">Recent bookings</h3>
+  {% if recent_bookings %}
+  <ul>
+    {% for b in recent_bookings %}
+    <li>
+      {{ b.meeting_name or b.room_name }} - {{ b.room_name }} - {{ b.date }} {{ b.start_time }} to {{ b.end_time }}
+      - <a href="/edit-booking/{{ b._id }}">Edit</a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>No bookings yet.</p>
+  {% endif %}
+  <p><a href="/">View all bookings</a></p>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function toggleNameEdit(show) {
+    document.getElementById('name-form').hidden = !show;
+    if (show) document.getElementById('display-name-input').focus();
+  }
+
+  // ---------- UPDATE: change the display name via API ----------
+  async function saveName(e) {
+    e.preventDefault();
+    var val = document.getElementById('display-name-input').value.trim();
+    if (!val) return;
+    var fd = new FormData();
+    fd.append('display_name', val);
+    try {
+      var res = await fetch('/update-profile', { method: 'POST', body: fd });
+      var data = await res.json();
+      if (data.success) {
+        document.getElementById('display-name-text').textContent = val;
+        toggleNameEdit(false);
+        showToast('Name updated');
+      } else {
+        showToast(data.error || 'Update failed', 'error');
+      }
+    } catch (err) {
+      showToast('Something went wrong', 'error');
+    }
+  }
+
+  // ---------- UPDATE: upload a profile photo via API ----------
+  async function uploadPhoto(input) {
+    var file = input.files && input.files[0];
+    if (!file) return;
+    var fd = new FormData();
+    fd.append('photo', file);
+    showToast('Uploading photo...');
+    try {
+      var res = await fetch('/upload-photo', { method: 'POST', body: fd });
+      var data = await res.json();
+      if (data.success && data.photo_url) {
+        var wrap = document.getElementById('avatar-wrap');
+        wrap.innerHTML = '';
+        var img = document.createElement('img');
+        img.src = data.photo_url + '?t=' + Date.now();
+        img.alt = 'Profile picture';
+        img.width = 96;
+        img.height = 96;
+        wrap.appendChild(img);
+        showToast('Profile photo updated');
+      } else {
+        showToast(data.error || 'Upload failed', 'error');
+      }
+    } catch (err) {
+      showToast('Upload failed', 'error');
+    } finally {
+      input.value = '';
+    }
+  }
+</script>
+{% endblock %}
