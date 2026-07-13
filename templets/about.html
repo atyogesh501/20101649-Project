@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% set active_nav = 'about' %}
+
+{% block title %}About and Guide - Team Connect{% endblock %}
+{% block page_title %}About and Guide{% endblock %}
+{% block page_subtitle %}What Team Connect does, how it is built, and how to use every feature{% endblock %}
+
+{% block content %}
+<section aria-labelledby="intro-heading">
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Rooms</th>
+        <th scope="col">Bookings</th>
+        <th scope="col">Members</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{ totals.rooms }}</td>
+        <td>{{ totals.bookings }}</td>
+        <td>{{ totals.users }}</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<hr />
+
+<section aria-labelledby="features-heading">
+  <h3 id="features-heading">Key features</h3>
+  <ul>
+    <li><strong>24-hour booking:</strong> reserve rooms at any hour of the day, with no 9-to-6 limits.</li>
+    <li><strong>Create and manage rooms:</strong> add new meeting rooms and manage the ones you own.</li>
+    <li><strong>Clash-free scheduling:</strong> every booking is checked so meetings never overlap in the same room.</li>
+    <li><strong>Occupancy insights:</strong> occupancy figures and free-slot suggestions across the next several days.</li>
+    <li><strong>Profiles and activity stats:</strong> personal profile with live counts of rooms and bookings.</li>
+  </ul>
+</section>
+
+<hr />
+
+<section aria-labelledby="tech-heading">
+  <h3 id="tech-heading">Technologies used</h3>
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Technology</th>
+        <th scope="col">Role</th>
+        <th scope="col">Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Flask (Python)</td>
+        <td>Backend and routing</td>
+        <td>Web framework serving pages and JSON APIs for rooms, bookings and the chat endpoint.</td>
+      </tr>
+      <tr>
+        <td>Firebase Firestore</td>
+        <td>Database</td>
+        <td>NoSQL document store holding rooms, days, bookings and user profiles.</td>
+      </tr>
+      <tr>
+        <td>Firebase Authentication</td>
+        <td>Sign-in</td>
+        <td>Secure Google authentication; each request is tied to a verified user identity.</td>
+      </tr>
+      
+      <tr>
+        <td>Jinja2 templates</td>
+        <td>Server rendering</td>
+        <td>HTML templates (base, dashboard, room, profile, about) rendered on the server for initial data.</td>
+      </tr>
+      <tr>
+        <td>Plain HTML and JavaScript</td>
+        <td>Frontend</td>
+        <td>Unstyled HTML with the fetch API; all create, read, update and delete actions call JSON endpoints.</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<hr />
+
+<section aria-labelledby="how-heading">
+  <h3 id="how-heading">How it works</h3>
+
+  <h4>Create a room</h4>
+  <ol>
+    <li>Open the Dashboard and use the "Add New Room" field, </li>
+    <li>Enter a unique room name - duplicate names are rejected automatically.</li>
+    <li>The room is saved and instantly appears in the room list without a page refresh.</li>
+    <li>You become the room owner, and it shows under "Rooms I created" on your profile.</li>
+  </ol>
+
+  <h4>Book a room</h4>
+  <ol>
+    <li>Pick a room, a date, a start and end time, and give the meeting a name.</li>
+    <li>Booking is allowed at any time of day - a full 24 hours are available.</li>
+    <li>The system checks for clashes; overlapping times in the same room are blocked.</li>
+    <li>On success the booking is stored and appears on the room calendar and occupancy figures.</li>
+  </ol>
+
+  <h4>Reschedule a booking</h4>
+  <ol>
+    <li>Go to your Profile or a room, and click Edit on the booking.</li>
+    <li>Change the date and/or the start and end times, then save.</li>
+    <li>The new slot is re-checked for clashes before it is accepted.</li>
+  </ol>
+
+  <h4>Cancel a booking</h4>
+  <ol>
+    <li>Find the booking on the room page or your dashboard and use the delete option.</li>
+    <li>The reservation is removed and the room calendar frees up immediately.</li>
+  </ol>
+
+</section>
+
+<hr />
+
+<section aria-labelledby="cta-heading">
+  <h3 id="cta-heading">Ready to book?</h3>
+  <p>
+    <a href="/">Go to Dashboard</a>
+  </p>
+</section>
+{% endblock %}
