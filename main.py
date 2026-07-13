@@ -204,3 +204,155 @@ def find_earliest_free_slot(room_id: str):
         if free:
             return {"date": date_str, "time": free[0]["start"]}
     return None
+
+
+
+
+# ==================== SHARED ACTION SERVICES ====================
+# Core service functions for room and booking operations (CRUD).
+# Used by HTTP route handlers to perform business logic.
+
+def _find_room_by_name_or_id(value: str):
+    """Resolve a room by its document id first, then by (case-insensitive) name."""
+    if not value:
+        return None
+    doc = rooms_collection.document(value).get()
+    if doc.exists:
+        return doc_to_dict(doc)
+    for r in rooms_collection.stream():
+        data = doc_to_dict(r)
+        if data.get("name", "").strip().lower() == value.strip().lower():
+            return data
+    return None
+
+
+def _valid_time(t: str) -> bool:
+    try:
+        datetime.strptime(t, "%H:%M")
+        return True
+    except (ValueError, TypeError):
+        return False
+
+
+def _valid_date(d: str) -> bool:
+    try:
+        datetime.strptime(d, "%Y-%m-%d")
+        return True
+    except (ValueError, TypeError):
+        return False
+
+
+def create_room_svc(user: dict, room_name: str):
+    room_name = (room_name or "").strip()
+    if not room_name:
+        return {"error": "Please provide a room name."}
+    existing = list(rooms_collection.where(filter=FieldFilter("name", "==", room_name)).limit(1).stream())
+    if existing:
+        return {"error": f"A room named '{room_name}' already exists."}
+    _, ref = rooms_collection.add({
+        "name": room_name,
+        "created_by": user["user_id"],
+        "created_by_email": user["email"],
+        "created_at": datetime.now().isoformat(),
+    })
+    bump_stat(user["user_id"], "rooms_created")
+    return {"success": True, "room_id": ref.id, "room_name": room_name}
+
+
+def book_room_svc(user: dict, room_ref: str, date: str, start_time: str, end_time: str, meeting_name: str):
+    room = _find_room_by_name_or_id(room_ref)
+    if not room:
+        return {"error": f"I couldn't find a room called '{room_ref}'."}
+    meeting_name = (meeting_name or "").strip()
+    if not meeting_name:
+        return {"error": "Please give the meeting a name."}
+    if not _valid_date(date):
+        return {"error": "That date isn't valid. Use YYYY-MM-DD."}
+    if not (_valid_time(start_time) and _valid_time(end_time)):
+        return {"error": "Those times aren't valid. Use HH:MM (24h)."}
+    if start_time >= end_time:
+        return {"error": "End time must be after start time."}
+    if check_booking_clash(room["_id"], date, start_time, end_time):
+        return {"error": f"{room['name']} is already booked during that window on {date}."}
+
+    day_id = get_or_create_day(room["_id"], date)
+    _, ref = bookings_collection.add({
+        "day_id": day_id,
+        "room_id": room["_id"],
+        "room_name": room["name"],
+        "meeting_name": meeting_name,
+        "date": date,
+        "start_time": start_time,
+        "end_time": end_time,
+        "user_id": user["user_id"],
+        "user_email": user["email"],
+        "created_at": datetime.now().isoformat(),
+    })
+    bump_stat(user["user_id"], "bookings_created")
+    return {
+        "success": True,
+        "booking_id": ref.id,
+        "room_name": room["name"],
+        "meeting_name": meeting_name,
+        "date": date,
+        "start_time": start_time,
+        "end_time": end_time,
+    }
+
+
+def _find_user_booking(user: dict, meeting_name: str = "", date: str = "", room_ref: str = ""):
+    """Best-effort match of one of the current user's bookings from loose criteria."""
+    mine = [doc_to_dict(d) for d in bookings_collection.where(filter=FieldFilter("user_id", "==", user["user_id"])).stream()]
+    room = _find_room_by_name_or_id(room_ref) if room_ref else None
+    matches = []
+    for b in mine:
+        if meeting_name and meeting_name.strip().lower() not in b.get("meeting_name", "").lower():
+            continue
+        if date and b.get("date") != date:
+            continue
+        if room and b.get("room_id") != room["_id"]:
+            continue
+        matches.append(b)
+    return matches
+
+
+def cancel_booking_svc(user: dict, meeting_name: str = "", date: str = "", room_ref: str = ""):
+    matches = _find_user_booking(user, meeting_name, date, room_ref)
+    if not matches:
+        return {"error": "I couldn't find a matching booking of yours to cancel."}
+    if len(matches) > 1:
+        summary = "; ".join(f"{m.get('meeting_name')} in {m.get('room_name')} on {m.get('date')} {m.get('start_time')}-{m.get('end_time')}" for m in matches[:5])
+        return {"error": f"I found multiple matching bookings: {summary}. Please be more specific (name + date)."}
+    b = matches[0]
+    bookings_collection.document(b["_id"]).delete()
+    bump_stat(user["user_id"], "bookings_deleted")
+    return {"success": True, "cancelled": b.get("meeting_name"), "room_name": b.get("room_name"), "date": b.get("date"), "start_time": b.get("start_time"), "end_time": b.get("end_time")}
+
+
+def reschedule_booking_svc(user: dict, meeting_name: str = "", date: str = "", room_ref: str = "",
+                           new_date: str = "", new_start: str = "", new_end: str = ""):
+    matches = _find_user_booking(user, meeting_name, date, room_ref)
+    if not matches:
+        return {"error": "I couldn't find a matching booking of yours to reschedule."}
+    if len(matches) > 1:
+        return {"error": "I found multiple matching bookings. Please specify the meeting name and current date."}
+    b = matches[0]
+    target_date = new_date or b.get("date")
+    target_start = new_start or b.get("start_time")
+    target_end = new_end or b.get("end_time")
+    if not _valid_date(target_date) or not (_valid_time(target_start) and _valid_time(target_end)):
+        return {"error": "The new date/time isn't valid."}
+    if target_start >= target_end:
+        return {"error": "End time must be after start time."}
+    if check_booking_clash(b["room_id"], target_date, target_start, target_end, b["_id"]):
+        return {"error": f"{b.get('room_name')} is already booked during that new window."}
+    day_id = get_or_create_day(b["room_id"], target_date)
+    bookings_collection.document(b["_id"]).update({
+        "day_id": day_id,
+        "date": target_date,
+        "start_time": target_start,
+        "end_time": target_end,
+        "updated_at": datetime.now().isoformat(),
+    })
+    bump_stat(user["user_id"], "bookings_edited")
+    return {"success": True, "meeting_name": b.get("meeting_name"), "room_name": b.get("room_name"), "date": target_date, "start_time": target_start, "end_time": target_end}
