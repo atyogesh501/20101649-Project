@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Booking - Team Connect{% endblock %}
+{% block page_title %}Edit Booking{% endblock %}
+{% block page_subtitle %}Modify your reservation{% endblock %}
+
+{% block content %}
+<p><a href="/">Back to dashboard</a></p>
+
+<section aria-labelledby="current-booking-heading">
+  <h3 id="current-booking-heading">Current Booking</h3>
+  <p>{{ booking.meeting_name or 'Booking' }} - {{ booking.room_name }}</p>
+  <p>{{ booking.date }} - {{ booking.start_time }} to {{ booking.end_time }}</p>
+</section>
+
+<hr />
+
+<section aria-labelledby="edit-heading">
+  <h3 id="edit-heading">Update Booking Details</h3>
+  <form id="edit-form">
+    <p>
+      <label for="edit-meeting-name">Meeting Name</label><br />
+      <input type="text" id="edit-meeting-name" name="meeting_name" required maxlength="80"
+        value="{{ booking.meeting_name or '' }}" placeholder="e.g., Sprint Planning" />
+    </p>
+    <p>
+      <label for="edit-room-select">Room</label><br />
+      <select id="edit-room-select" name="room_id" required>
+        {% for room in rooms %}
+        {% set is_selected = room._id|string == booking.room_id|string %}
+        <option value="{{ room._id }}" {{ "selected" if is_selected }}>{{ room.name }}</option>
+        {% endfor %}
+      </select>
+    </p>
+    <p>
+      <label for="edit-date">Date</label><br />
+      <input type="date" id="edit-date" name="date" required value="{{ booking.date }}" />
+    </p>
+    <p>
+      <label for="edit-start-time">Start Time</label><br />
+      <input type="time" id="edit-start-time" name="start_time" required value="{{ booking.start_time }}" />
+    </p>
+    <p>
+      <label for="edit-end-time">End Time</label><br />
+      <input type="time" id="edit-end-time" name="end_time" required value="{{ booking.end_time }}" />
+    </p>
+    <p>Book a room at any time of day - 24 hours available.</p>
+
+    <div id="edit-booked-slots-container" hidden>
+      <h4>Already Booked Slots (excluding current booking)</h4>
+      <ul id="edit-booked-slots"></ul>
+    </div>
+
+    <p id="edit-error" role="alert"></p>
+
+    <button type="submit">Update Booking</button>
+    <a href="/">Cancel</a>
+  </form>
+  <p>Note: if your new time slot conflicts with an existing booking, the update will be rejected.</p>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  var currentBookingId = '{{ booking._id }}';
+
+  // ---------- READ: show other bookings for the chosen room/date ----------
+  async function loadEditBookedSlots() {
+    var roomId = document.getElementById('edit-room-select').value;
+    var date = document.getElementById('edit-date').value;
+    var container = document.getElementById('edit-booked-slots-container');
+    var slotsEl = document.getElementById('edit-booked-slots');
+    if (!roomId || !date) {
+      container.hidden = true;
+      return;
+    }
+    try {
+      var response = await fetch('/room-bookings/' + roomId + '?date=' + date);
+      var result = await response.json();
+      var others = (result.bookings || []).filter(function (b) { return b._id !== currentBookingId; });
+      if (others.length > 0) {
+        container.hidden = false;
+        slotsEl.innerHTML = '';
+        others.forEach(function (b) {
+          var li = document.createElement('li');
+          li.textContent = b.start_time + ' - ' + b.end_time + ' (' + b.user_email + ')';
+          slotsEl.appendChild(li);
+        });
+      } else {
+        container.hidden = true;
+      }
+    } catch (err) {
+      container.hidden = true;
+    }
+  }
+
+  document.getElementById('edit-date').addEventListener('change', loadEditBookedSlots);
+  document.getElementById('edit-room-select').addEventListener('change', loadEditBookedSlots);
+  loadEditBookedSlots();
+
+  // ---------- UPDATE: save booking changes via API ----------
+  document.getElementById('edit-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var errorEl = document.getElementById('edit-error');
+    errorEl.textContent = '';
+    var formData = new FormData(this);
+    try {
+      var response = await fetch('/update-booking/' + currentBookingId, { method: 'POST', body: formData });
+      var result = await response.json();
+      if (result.success) {
+        showToast('Booking updated successfully!');
+        setTimeout(function () { window.location.href = '/'; }, 1000);
+      } else {
+        errorEl.textContent = result.error || 'Could not update booking.';
+      }
+    } catch (err) {
+      errorEl.textContent = 'An error occurred. Please try again.';
+    }
+  });
+</script>
+{% endblock %}
