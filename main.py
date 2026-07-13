@@ -740,3 +740,53 @@ def update_profile():
         {"display_name": display_name.strip() or user["email"]}, merge=True
     )
     return jsonify({"success": True})
+
+
+# ==================== BOOKINGS GRAPH DATA ====================
+
+def _to_minutes(t):
+    h, m = t.split(":")
+    return int(h) * 60 + int(m)
+
+
+@app.route("/room-graph/<room_id>", methods=["GET"])
+def room_graph(room_id):
+    """Return bookings for a room on a date shaped for a timeline graph."""
+    user = get_user_data()
+    date = request.args.get("date")
+    if not date:
+        date = datetime.now().strftime("%Y-%m-%d")
+
+    day_doc = find_day_doc(room_id, date)
+    bookings = []
+    if day_doc:
+        bookings = [doc_to_dict(b) for b in bookings_collection.where(filter=FieldFilter("day_id", "==", day_doc.id)).stream()]
+    bookings.sort(key=lambda b: b.get("start_time", ""))
+
+    items = []
+    for b in bookings:
+        items.append({
+            "id": b["_id"],
+            "start": b["start_time"],
+            "end": b["end_time"],
+            "start_min": _to_minutes(b["start_time"]),
+            "end_min": _to_minutes(b["end_time"]),
+            "user_email": b.get("user_email", ""),
+            "is_mine": bool(user and b.get("user_id") == user["user_id"]),
+        })
+
+    free = compute_free_slots(room_id, date)
+    return jsonify({
+        "date": date,
+        "work_start": WORK_START,
+        "work_end": WORK_END,
+        "work_start_min": _to_minutes(WORK_START),
+        "work_end_min": _to_minutes(WORK_END),
+        "bookings": items,
+        "free_slots": free,
+    })
+
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8000, debug=True)
