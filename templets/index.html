@@ -63,3 +63,57 @@
         <option value="{{ room._id }}">{{ room.name }}</option>
         {% endfor %}
       </select>
+            </select>
+    </p>
+    <p>
+      <label for="book-date">Date</label><br />
+      <input type="date" id="book-date" name="date" required />
+    </p>
+    <p>
+      <label for="book-start-time">Start Time</label><br />
+      <input type="time" id="book-start-time" name="start_time" required />
+    </p>
+    <p>
+      <label for="book-end-time">End Time</label><br />
+      <input type="time" id="book-end-time" name="end_time" required />
+    </p>
+    <p>Book a room at any time of day - 24 hours available.</p>
+
+    <div id="booked-slots-container" hidden>
+      <h4>Already Booked Slots</h4>
+      <ul id="booked-slots"></ul>
+    </div>
+    <p id="booking-error" role="alert"></p>
+    <button type="submit">Book Room</button>
+  </form>
+</section>
+
+<hr />
+
+<section aria-labelledby="filter-heading">
+  <h3 id="filter-heading">Filter by Day</h3>
+  <p>
+    <label for="filter-date">Select Date</label><br />
+    <input type="date" id="filter-date" />
+  </p>
+  <button type="button" onclick="filterByDay()">Search Bookings</button>
+
+  <div id="filtered-results" hidden>
+    <h4>Bookings on <span id="filtered-date"></span></h4>
+    <ul id="filtered-bookings-list"></ul>
+  </div>
+</section>
+
+<hr />
+
+<section aria-labelledby="rooms-heading">
+  <h3 id="rooms-heading">Available Rooms (<span id="rooms-count">{{ rooms|length }}</span>)</h3>
+  <ul id="rooms-list">
+    {% for room in rooms %}
+    <li data-room-id="{{ room._id }}">
+      <a href="/room/{{ room._id }}">{{ room.name }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+  <p id="no-rooms-message" {% if rooms %}hidden{% endif %}>No rooms available yet. Add a room to get started.</p>
+</section>
