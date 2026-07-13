@@ -397,3 +397,30 @@ def add_room():
             "created_by_email": user["email"],
         },
     })
+
+
+@app.route("/delete-room/<room_id>", methods=["POST"])
+def delete_room(room_id):
+    user = get_user_data()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    room_doc = rooms_collection.document(room_id).get()
+    if not room_doc.exists:
+        return jsonify({"error": "Room not found"}), 404
+
+    room = room_doc.to_dict()
+    if room.get("created_by") != user["user_id"]:
+        return jsonify({"error": "Only the room creator can delete this room"}), 403
+
+    days = list(days_collection.where(filter=FieldFilter("room_id", "==", room_id)).stream())
+    for day in days:
+        booking = list(bookings_collection.where(filter=FieldFilter("day_id", "==", day.id)).limit(1).stream())
+        if booking:
+            return jsonify({"error": "Cannot delete room with existing bookings"}), 400
+
+    for day in days:
+        days_collection.document(day.id).delete()
+    rooms_collection.document(room_id).delete()
+    bump_stat(user["user_id"], "rooms_deleted")
+    return jsonify({"success": True})
