@@ -690,7 +690,7 @@ def about_page():
             "bookings": total_bookings,
             "users": total_users,
         },
-    )
+    ,)
 
 
 @app.route("/upload-photo", methods=["POST"])
