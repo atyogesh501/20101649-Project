@@ -356,3 +356,12 @@ def reschedule_booking_svc(user: dict, meeting_name: str = "", date: str = "", r
     })
     bump_stat(user["user_id"], "bookings_edited")
     return {"success": True, "meeting_name": b.get("meeting_name"), "room_name": b.get("room_name"), "date": target_date, "start_time": target_start, "end_time": target_end}
+    
+    
+# ==================== ROUTES ====================
+
+@app.route("/", methods=["GET"])
+def home():
+    user = get_user_data()
+    rooms = [doc_to_dict(doc) for doc in rooms_collection.stream()]
+    return render_template("index.html", user=user, rooms=rooms)
