@@ -117,3 +117,228 @@
   </ul>
   <p id="no-rooms-message" {% if rooms %}hidden{% endif %}>No rooms available yet. Add a room to get started.</p>
 </section>
+
+<hr />
+
+<section aria-labelledby="my-bookings-heading">
+  <h3 id="my-bookings-heading">My Bookings</h3>
+  <p>
+    <label for="filter-room-select">Filter by room</label><br />
+    <select id="filter-room-select">
+      <option value="">All Rooms</option>
+      {% for room in rooms %}
+      <option value="{{ room._id }}">{{ room.name }}</option>
+      {% endfor %}
+    </select>
+  </p>
+  <div id="my-bookings-list">
+    <p>Loading your bookings...</p>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var today = new Date().toISOString().split('T')[0];
+    var bookDate = document.getElementById('book-date');
+    var filterDate = document.getElementById('filter-date');
+    if (bookDate) bookDate.setAttribute('min', today);
+    if (filterDate) filterDate.setAttribute('min', today);
+
+    if (document.getElementById('my-bookings-list')) loadMyBookings();
+
+    var filterRoom = document.getElementById('filter-room-select');
+    if (filterRoom) filterRoom.addEventListener('change', function () { loadMyBookings(this.value); });
+
+    var roomSelect = document.getElementById('book-room-select');
+    if (roomSelect) roomSelect.addEventListener('change', loadBookedSlots);
+    if (bookDate) bookDate.addEventListener('change', loadBookedSlots);
+  });
+
+  // ---------- CREATE: add a room via API, then update the DOM ----------
+  document.getElementById('add-room-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var errorEl = document.getElementById('add-room-error');
+    errorEl.textContent = '';
+    var formData = new FormData(this);
+    try {
+      var response = await fetch('/add-room', { method: 'POST', body: formData });
+      var result = await response.json();
+      if (result.success) {
+        addRoomToDom(result.room);
+        this.reset();
+        showToast('Room added successfully!');
+      } else {
+        errorEl.textContent = result.error || 'Could not add room.';
+      }
+    } catch (err) {
+      errorEl.textContent = 'An error occurred. Please try again.';
+    }
+  });
+
+  function addRoomToDom(room) {
+    // List of rooms
+    var list = document.getElementById('rooms-list');
+    var li = document.createElement('li');
+    li.setAttribute('data-room-id', room._id);
+    var link = document.createElement('a');
+    link.href = '/room/' + room._id;
+    link.textContent = room.name;
+    li.appendChild(link);
+    list.appendChild(li);
+
+    document.getElementById('no-rooms-message').hidden = true;
+    var count = document.getElementById('rooms-count');
+    count.textContent = String(parseInt(count.textContent || '0', 10) + 1);
+
+    // Both room dropdowns
+    ['book-room-select', 'filter-room-select'].forEach(function (id) {
+      var sel = document.getElementById(id);
+      if (!sel) return;
+      var opt = document.createElement('option');
+      opt.value = room._id;
+      opt.textContent = room.name;
+      sel.appendChild(opt);
+    });
+  }
+
+  // ---------- READ: show existing booked slots for the chosen room/date ----------
+  async function loadBookedSlots() {
+    var roomId = document.getElementById('book-room-select').value;
+    var date = document.getElementById('book-date').value;
+    var container = document.getElementById('booked-slots-container');
+    var slotsEl = document.getElementById('booked-slots');
+    if (!roomId || !date) {
+      container.hidden = true;
+      return;
+    }
+    try {
+      var response = await fetch('/room-bookings/' + roomId + '?date=' + date);
+      var result = await response.json();
+      if (result.bookings && result.bookings.length > 0) {
+        container.hidden = false;
+        slotsEl.innerHTML = '';
+        result.bookings.forEach(function (b) {
+          var li = document.createElement('li');
+          li.textContent = b.start_time + ' - ' + b.end_time + ' (' + b.user_email + ')';
+          slotsEl.appendChild(li);
+        });
+      } else {
+        container.hidden = true;
+      }
+    } catch (err) {
+      container.hidden = true;
+    }
+  }
+
+  // ---------- CREATE: book a room via API ----------
+  document.getElementById('booking-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var errorEl = document.getElementById('booking-error');
+    errorEl.textContent = '';
+    var formData = new FormData(this);
+    try {
+      var response = await fetch('/book-room', { method: 'POST', body: formData });
+      var result = await response.json();
+      if (result.success) {
+        showToast('Booking created successfully!');
+        this.reset();
+        document.getElementById('booked-slots-container').hidden = true;
+        loadMyBookings();
+      } else {
+        errorEl.textContent = result.error || 'Could not create booking.';
+      }
+    } catch (err) {
+      errorEl.textContent = 'An error occurred. Please try again.';
+    }
+  });
+
+  // ---------- READ: load the current user's bookings ----------
+  async function loadMyBookings(roomId) {
+    var listEl = document.getElementById('my-bookings-list');
+    if (!listEl) return;
+    try {
+      var url = roomId ? '/my-bookings?room_id=' + roomId : '/my-bookings';
+      var response = await fetch(url);
+      var result = await response.json();
+      listEl.innerHTML = '';
+      if (result.bookings && result.bookings.length > 0) {
+        var ul = document.createElement('ul');
+        result.bookings.forEach(function (b) {
+          var li = document.createElement('li');
+          var title = b.meeting_name ? b.meeting_name : b.room_name;
+          li.appendChild(document.createTextNode(
+            title + ' - ' + b.room_name + ' - ' + b.date + ' ' + b.start_time + ' to ' + b.end_time + ' '
+          ));
+
+          var edit = document.createElement('a');
+          edit.href = '/edit-booking/' + b._id;
+          edit.textContent = 'Edit';
+          li.appendChild(edit);
+          li.appendChild(document.createTextNode(' '));
+
+          var del = document.createElement('button');
+          del.type = 'button';
+          del.textContent = 'Delete';
+          del.addEventListener('click', function () { deleteBooking(b._id); });
+          li.appendChild(del);
+
+          ul.appendChild(li);
+        });
+        listEl.appendChild(ul);
+      } else {
+        listEl.innerHTML = '<p>No bookings yet. Book a room to get started.</p>';
+      }
+    } catch (err) {
+      listEl.innerHTML = '<p role="alert">Error loading bookings.</p>';
+    }
+  }
+
+  // ---------- DELETE: remove a booking via API ----------
+  async function deleteBooking(bookingId) {
+    if (!confirm('Are you sure you want to delete this booking?')) return;
+    try {
+      var response = await fetch('/delete-booking/' + bookingId, { method: 'POST' });
+      var result = await response.json();
+      if (result.success) {
+        showToast('Booking deleted successfully!');
+        loadMyBookings(document.getElementById('filter-room-select').value);
+      } else {
+        showToast(result.error, 'error');
+      }
+    } catch (err) {
+      showToast('An error occurred. Please try again.', 'error');
+    }
+  }
+
+  // ---------- READ: list all bookings on a chosen day ----------
+  async function filterByDay() {
+    var date = document.getElementById('filter-date').value;
+    if (!date) {
+      showToast('Please select a date', 'error');
+      return;
+    }
+    try {
+      var response = await fetch('/filter-by-day?date=' + date);
+      var result = await response.json();
+      document.getElementById('filtered-results').hidden = false;
+      document.getElementById('filtered-date').textContent = date;
+      var listEl = document.getElementById('filtered-bookings-list');
+      listEl.innerHTML = '';
+      if (result.bookings && result.bookings.length > 0) {
+        result.bookings.forEach(function (b) {
+          var li = document.createElement('li');
+          var title = b.meeting_name ? b.meeting_name : b.room_name;
+          li.textContent = title + ' - ' + b.room_name + ' - ' + b.start_time + ' to ' + b.end_time + ' (booked by ' + b.user_email + ')';
+          listEl.appendChild(li);
+        });
+      } else {
+        listEl.innerHTML = '<li>No bookings found for this date.</li>';
+      }
+    } catch (err) {
+      showToast('An error occurred. Please try again.', 'error');
+    }
+  }
+</script>
+{% endblock %}
