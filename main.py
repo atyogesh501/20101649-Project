@@ -424,3 +424,78 @@ def delete_room(room_id):
     rooms_collection.document(room_id).delete()
     bump_stat(user["user_id"], "rooms_deleted")
     return jsonify({"success": True})
+
+@app.route("/book-room", methods=["POST"])
+def book_room():
+    user = get_user_data()
+    if not user:
+        return redirect(url_for("home"), code=303)
+
+    room_id = request.form["room_id"]
+    date = request.form["date"]
+    start_time = request.form["start_time"]
+    end_time = request.form["end_time"]
+    meeting_name = (request.form.get("meeting_name", "") or "").strip()
+
+    if not meeting_name:
+        return jsonify({"error": "Please enter a meeting name"}), 400
+    if start_time >= end_time:
+        return jsonify({"error": "End time must be after start time"}), 400
+    if check_booking_clash(room_id, date, start_time, end_time):
+        return jsonify({"error": "This time slot clashes with an existing booking"}), 400
+
+    day_id = get_or_create_day(room_id, date)
+    room_doc = rooms_collection.document(room_id).get()
+    if not room_doc.exists:
+        return jsonify({"error": "Room not found"}), 404
+    room = room_doc.to_dict()
+
+    bookings_collection.add({
+        "day_id": day_id,
+        "room_id": room_id,
+        "room_name": room["name"],
+        "meeting_name": meeting_name,
+        "date": date,
+        "start_time": start_time,
+        "end_time": end_time,
+        "user_id": user["user_id"],
+        "user_email": user["email"],
+        "created_at": datetime.now().isoformat(),
+    })
+    bump_stat(user["user_id"], "bookings_created")
+    return jsonify({"success": True})
+
+
+
+@app.route("/my-bookings", methods=["GET"])
+def get_my_bookings():
+    user = get_user_data()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    room_id = request.args.get("room_id")
+    query = bookings_collection.where(filter=FieldFilter("user_id", "==", user["user_id"]))
+    if room_id:
+        query = query.where(filter=FieldFilter("room_id", "==", room_id))
+
+    bookings = [doc_to_dict(doc) for doc in query.stream()]
+    bookings.sort(key=lambda b: (b.get("date", ""), b.get("start_time", "")))
+    return jsonify({"bookings": bookings})
+
+
+@app.route("/delete-booking/<booking_id>", methods=["POST"])
+def delete_booking(booking_id):
+    user = get_user_data()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    booking_doc = bookings_collection.document(booking_id).get()
+    if not booking_doc.exists:
+        return jsonify({"error": "Booking not found"}), 404
+
+    booking = booking_doc.to_dict()
+    if booking.get("user_id") != user["user_id"]:
+        return jsonify({"error": "You can only delete your own bookings"}), 403
+
+    bookings_collection.document(booking_id).delete()
+    bump_stat(user["user_id"], "bookings_deleted")
