@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}{{ room.name }} - Team Connect{% endblock %}
+{% block page_title %}{{ room.name }}{% endblock %}
+{% block page_subtitle %}Room analytics and bookings{% endblock %}
+
+{% block content %}
+<p><a href="/">Back to dashboard</a></p>
+
+<section aria-labelledby="room-info-heading">
+  <h3 id="room-info-heading">Room</h3>
+  <p>Name: {{ room.name }}</p>
+  <p>ID: {{ room._id }}</p>
+  {% if user and room.created_by == user.user_id %}
+  <p>You created this room.</p>
+  <button type="button" onclick="deleteRoom('{{ room._id }}')">Delete Room</button>
+  <p>(Only available if no bookings exist.)</p>
+  {% endif %}
+</section>
+
+<hr />
+
+<section aria-labelledby="next-available-heading">
+  <h3 id="next-available-heading">Next Available</h3>
+  {% if earliest_free %}
+  <p>{{ earliest_free.date }} - available from {{ earliest_free.time }}</p>
+  {% else %}
+  <p>Fully booked - no slots in the next 5 days.</p>
+  {% endif %}
+</section>
+
+<hr />
+
+<section aria-labelledby="occupancy-heading">
+  <h3 id="occupancy-heading">Occupancy (next 5 days, 24-hour)</h3>
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Day</th>
+        <th scope="col">Date</th>
+        <th scope="col">Occupancy</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for day in occupancy_data %}
+      <tr>
+        <td>{{ day.day_name }}</td>
+        <td>{{ day.date }}</td>
+        <td>{{ day.occupancy }}%</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<hr />
+
+<section aria-labelledby="calendar-heading">
+  <h3 id="calendar-heading">Calendar View (next 5 days)</h3>
+  {% for day in calendar_data %}
+  <h4>{{ day.day_name }} - {{ day.date }}</h4>
+  {% if day.bookings %}
+  <ul>
+    {% for booking in day.bookings %}
+    <li>
+      {{ booking.start_time }} - {{ booking.end_time }}
+      {% if booking.meeting_name %}- {{ booking.meeting_name }}{% endif %}
+      - {{ booking.user_email }}
+      {% if user and booking.user_id == user.user_id %}(you){% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>Free - no bookings.</p>
+  {% endif %}
+  {% endfor %}
+</section>
+
+<hr />
+
+<section aria-labelledby="all-bookings-heading">
+  <h3 id="all-bookings-heading">All Bookings (<span id="bookings-total">{{ bookings|length }}</span> total)</h3>
+  {% if bookings %}
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Meeting</th>
+        <th scope="col">Date</th>
+        <th scope="col">Time</th>
+        <th scope="col">Booked By</th>
+        <th scope="col">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for booking in bookings %}
+      <tr id="row-{{ booking._id }}">
+        <td>{{ booking.meeting_name or '-' }}</td>
+        <td>{{ booking.date }}</td>
+        <td>{{ booking.start_time }} - {{ booking.end_time }}</td>
+        <td>{{ booking.user_email }}</td>
+        <td>
+          {% if user and booking.user_id == user.user_id %}
+          <a href="/edit-booking/{{ booking._id }}">Edit</a>
+          <button type="button" onclick="deleteBooking('{{ booking._id }}')">Delete</button>
+          {% else %}
+          -
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>No bookings yet. <a href="/">Make a booking.</a></p>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // ---------- DELETE: remove a booking via API, then update the DOM ----------
+  async function deleteBooking(bookingId) {
+    if (!confirm('Are you sure you want to delete this booking?')) return;
+    try {
+      var res = await fetch('/delete-booking/' + bookingId, { method: 'POST' });
+      var result = await res.json();
+      if (result.success) {
+        var row = document.getElementById('row-' + bookingId);
+        if (row) row.remove();
+        var total = document.getElementById('bookings-total');
+        if (total) total.textContent = String(Math.max(0, parseInt(total.textContent, 10) - 1));
+        showToast('Booking deleted successfully!');
+      } else {
+        showToast(result.error, 'error');
+      }
+    } catch (err) {
+      showToast('An error occurred. Please try again.', 'error');
+    }
+  }
+
+  // ---------- DELETE: remove the room via API ----------
+  async function deleteRoom(roomId) {
+    if (!confirm('Are you sure you want to delete this room? This cannot be undone.')) return;
+    try {
+      var res = await fetch('/delete-room/' + roomId, { method: 'POST' });
+      var result = await res.json();
+      if (result.success) {
+        showToast('Room deleted successfully!');
+        setTimeout(function () { window.location.href = '/'; }, 700);
+      } else {
+        showToast(result.error, 'error');
+      }
+    } catch (err) {
+      showToast('An error occurred. Please try again.', 'error');
+    }
+  }
+</script>
+{% endblock %}
