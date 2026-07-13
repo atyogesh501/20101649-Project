@@ -690,3 +690,53 @@ def about_page():
             "bookings": total_bookings,
             "users": total_users,
         },
+    )
+
+
+@app.route("/upload-photo", methods=["POST"])
+def upload_photo():
+    user = get_user_data()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    photo = request.files.get("photo")
+    if photo is None:
+        return jsonify({"error": "No file uploaded"}), 400
+
+    if photo.content_type not in ("image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif"):
+        return jsonify({"error": "Please upload a PNG, JPG, WEBP or GIF image"}), 400
+
+    client = get_storage_client()
+    if client is None:
+        return jsonify({"error": "Storage is not configured"}), 500
+
+    try:
+        bucket = client.bucket(STORAGE_BUCKET)
+        ext = (photo.filename or "img").split(".")[-1].lower()
+        blob_name = f"profile_pics/{user['user_id']}/{uuid.uuid4().hex}.{ext}"
+        blob = bucket.blob(blob_name)
+        contents = photo.read()
+        blob.upload_from_string(contents, content_type=photo.content_type)
+        try:
+            blob.make_public()
+            photo_url = blob.public_url
+        except Exception:
+            photo_url = f"https://storage.googleapis.com/{STORAGE_BUCKET}/{blob_name}"
+
+        users_collection.document(user["user_id"]).set({"photo_url": photo_url}, merge=True)
+        return jsonify({"success": True, "photo_url": photo_url})
+    except Exception as e:
+        print(f"Photo upload error: {e}")
+        return jsonify({"error": f"Upload failed: {e}"}), 500
+
+
+@app.route("/update-profile", methods=["POST"])
+def update_profile():
+    user = get_user_data()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+    display_name = request.form["display_name"]
+    users_collection.document(user["user_id"]).set(
+        {"display_name": display_name.strip() or user["email"]}, merge=True
+    )
+    return jsonify({"success": True})
