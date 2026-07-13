@@ -565,3 +565,46 @@ def update_booking(booking_id):
     })
     bump_stat(user["user_id"], "bookings_edited")
     return jsonify({"success": True})
+
+
+@app.route("/room/<room_id>", methods=["GET"])
+def view_room(room_id):
+    user = get_user_data()
+    room_doc = rooms_collection.document(room_id).get()
+    if not room_doc.exists:
+        return redirect(url_for("home"), code=303)
+
+    room = doc_to_dict(room_doc)
+    bookings = [doc_to_dict(doc) for doc in bookings_collection.where(filter=FieldFilter("room_id", "==", room_id)).stream()]
+    bookings.sort(key=lambda b: (b.get("date", ""), b.get("start_time", "")))
+
+    today = datetime.now().date()
+    occupancy_data = []
+    calendar_data = []
+    for i in range(5):
+        check_date = today + timedelta(days=i)
+        date_str = check_date.strftime("%Y-%m-%d")
+        occupancy = calculate_occupancy(room_id, date_str)
+        occupancy_data.append({
+            "date": date_str,
+            "day_name": check_date.strftime("%A"),
+            "occupancy": occupancy,
+        })
+        day_bookings = [b for b in bookings if b["date"] == date_str]
+        calendar_data.append({
+            "date": date_str,
+            "day_name": check_date.strftime("%A"),
+            "bookings": day_bookings,
+        })
+
+    earliest_free = find_earliest_free_slot(room_id)
+
+    return render_template(
+        "room.html",
+        user=user,
+        room=room,
+        bookings=bookings,
+        occupancy_data=occupancy_data,
+        calendar_data=calendar_data,
+        earliest_free=earliest_free,
+    )
