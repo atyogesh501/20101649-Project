@@ -608,3 +608,63 @@ def view_room(room_id):
         calendar_data=calendar_data,
         earliest_free=earliest_free,
     )
+
+
+@app.route("/filter-by-day", methods=["GET"])
+def filter_by_day():
+    get_user_data()
+    date = request.args.get("date")
+    bookings = [doc_to_dict(doc) for doc in bookings_collection.where(filter=FieldFilter("date", "==", date)).stream()]
+    bookings.sort(key=lambda b: (b.get("room_name", ""), b.get("start_time", "")))
+    return jsonify({"bookings": bookings})
+
+
+@app.route("/room-bookings/<room_id>", methods=["GET"])
+def get_room_bookings(room_id):
+    get_user_data()
+    date = request.args.get("date")
+    query = bookings_collection.where(filter=FieldFilter("room_id", "==", room_id))
+    if date:
+        query = query.where(filter=FieldFilter("date", "==", date))
+    bookings = [doc_to_dict(doc) for doc in query.stream()]
+    bookings.sort(key=lambda b: (b.get("date", ""), b.get("start_time", "")))
+    return jsonify({"bookings": bookings})
+
+
+# ==================== PROFILE ====================
+
+@app.route("/profile", methods=["GET"])
+def profile_page():
+    user = get_user_data()
+    if not user:
+        return redirect(url_for("home"), code=303)
+
+    profile = get_user_profile(user["user_id"], user["email"], user["name"])
+
+    my_rooms = [doc_to_dict(d) for d in rooms_collection.where(filter=FieldFilter("created_by", "==", user["user_id"])).stream()]
+    my_bookings = [doc_to_dict(d) for d in bookings_collection.where(filter=FieldFilter("user_id", "==", user["user_id"])).stream()]
+    my_bookings.sort(key=lambda b: (b.get("date", ""), b.get("start_time", "")), reverse=True)
+
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    upcoming = [b for b in my_bookings if b.get("date", "") >= today_str]
+
+    stats = {
+        "rooms_created": profile.get("rooms_created", 0),
+        "rooms_deleted": profile.get("rooms_deleted", 0),
+        "bookings_created": profile.get("bookings_created", 0),
+        "bookings_deleted": profile.get("bookings_deleted", 0),
+        "bookings_edited": profile.get("bookings_edited", 0),
+        "active_rooms": len(my_rooms),
+        "active_bookings": len(my_bookings),
+        "upcoming_bookings": len(upcoming),
+    }
+
+    return render_template(
+        "profile.html",
+        user=user,
+        profile=profile,
+        stats=stats,
+        my_rooms=my_rooms,
+        recent_bookings=my_bookings[:8],
+    )
+
