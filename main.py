@@ -499,3 +499,69 @@ def delete_booking(booking_id):
 
     bookings_collection.document(booking_id).delete()
     bump_stat(user["user_id"], "bookings_deleted")
+    return jsonify({"success": True})
+
+
+@app.route("/edit-booking/<booking_id>", methods=["GET"])
+def edit_booking_page(booking_id):
+    user = get_user_data()
+    if not user:
+        return redirect(url_for("home"), code=303)
+
+    booking_doc = bookings_collection.document(booking_id).get()
+    if not booking_doc.exists:
+        return redirect(url_for("home"), code=303)
+
+    booking = doc_to_dict(booking_doc)
+    if booking.get("user_id") != user["user_id"]:
+        return redirect(url_for("home"), code=303)
+
+    rooms = [doc_to_dict(doc) for doc in rooms_collection.stream()]
+    return render_template("edit_booking.html", user=user, booking=booking, rooms=rooms)
+
+
+@app.route("/update-booking/<booking_id>", methods=["POST"])
+def update_booking(booking_id):
+    user = get_user_data()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    booking_doc = bookings_collection.document(booking_id).get()
+    if not booking_doc.exists:
+        return jsonify({"error": "Booking not found"}), 404
+
+    booking = booking_doc.to_dict()
+    if booking.get("user_id") != user["user_id"]:
+        return jsonify({"error": "You can only edit your own bookings"}), 403
+
+    room_id = request.form["room_id"]
+    date = request.form["date"]
+    start_time = request.form["start_time"]
+    end_time = request.form["end_time"]
+    meeting_name = (request.form.get("meeting_name", "") or "").strip() or booking.get("meeting_name", "")
+
+    if not meeting_name:
+        return jsonify({"error": "Please enter a meeting name"}), 400
+    if start_time >= end_time:
+        return jsonify({"error": "End time must be after start time"}), 400
+    if check_booking_clash(room_id, date, start_time, end_time, booking_id):
+        return jsonify({"error": "This time slot clashes with an existing booking"}), 400
+
+    day_id = get_or_create_day(room_id, date)
+    room_doc = rooms_collection.document(room_id).get()
+    if not room_doc.exists:
+        return jsonify({"error": "Room not found"}), 404
+    room = room_doc.to_dict()
+
+    bookings_collection.document(booking_id).update({
+        "day_id": day_id,
+        "room_id": room_id,
+        "room_name": room["name"],
+        "meeting_name": meeting_name,
+        "date": date,
+        "start_time": start_time,
+        "end_time": end_time,
+        "updated_at": datetime.now().isoformat(),
+    })
+    bump_stat(user["user_id"], "bookings_edited")
+    return jsonify({"success": True})
