@@ -8,29 +8,29 @@ A modern, scalable **Room Booking System** built with Flask and Firebase. Team C
 
 ---
 
-## 🚀 Features
+##  Features
 
 ### Core Functionality
-- **📅 Room Management** — Create, view, and manage conference rooms with metadata
-- **🔗 Smart Booking System** — Reserve rooms with automatic conflict detection
-- **⚡ Real-time Clash Detection** — Prevents double-bookings instantly
-- **📊 Occupancy Tracking** — Calculate room usage percentages and trends
-- **🔄 Booking Rescheduling** — Modify or cancel bookings with permission checks
-- **📈 Availability Suggestions** — Find earliest free slots across the week
-- **🔐 Access Control** — Users can only manage their own bookings
+- ** Room Management** — Create, view, and manage conference rooms with metadata
+- ** Smart Booking System** — Reserve rooms with automatic conflict detection
+- ** Real-time Clash Detection** — Prevents double-bookings instantly
+- ** Occupancy Tracking** — Calculate room usage percentages and trends
+- ** Booking Rescheduling** — Modify or cancel bookings with permission checks
+- ** Availability Suggestions** — Find earliest free slots across the week
+- ** Access Control** — Users can only manage their own bookings
 
 ### Technical Highlights
-- **🔐 Google OAuth 2.0** via Firebase Authentication
-- **☁️ Cloud Firestore Database** for real-time data consistency
-- **📱 Responsive Web Interface** with Jinja2 templating
-- **🧪 Comprehensive Test Suite** with 21 unit + integration tests
-- **📡 RESTful JSON API** for all CRUD operations
-- **📸 Profile Pictures** stored in Google Cloud Storage
-- **📊 User Statistics Dashboard** with activity tracking
+- ** Google OAuth 2.0** via Firebase Authentication
+- ** Cloud Firestore Database** for real-time data consistency
+- ** Responsive Web Interface** with Jinja2 templating
+- ** Comprehensive Test Suite** with 21 unit + integration tests
+- ** RESTful JSON API** for all CRUD operations
+- ** Profile Pictures** stored in Google Cloud Storage
+- ** User Statistics Dashboard** with activity tracking
 
 ---
 
-## 📋 System Requirements
+##  System Requirements
 
 - **Python:** 3.8+
 - **OS:** Windows, macOS, Linux
@@ -40,7 +40,7 @@ A modern, scalable **Room Booking System** built with Flask and Firebase. Team C
 
 ---
 
-## 🛠️ Installation & Setup
+##  Installation & Setup
 
 ### 1. Clone Repository
 ```bash
@@ -85,7 +85,7 @@ FLASK_DEBUG=True
 
 ---
 
-## ▶️ Running the Application
+##  Running the Application
 
 ### Development Server
 ```bash
@@ -105,7 +105,7 @@ gunicorn --bind 0.0.0.0:8000 main:app
 
 ---
 
-## 🧪 Testing
+##  Testing
 
 ### Run All Tests
 ```bash
@@ -141,7 +141,7 @@ OK
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 team-connect-app/
@@ -169,7 +169,7 @@ team-connect-app/
 
 ---
 
-## 🏗️ Architecture Overview
+##  Architecture Overview
 
 ### Technology Stack
 ```
@@ -228,7 +228,7 @@ days/
 
 ---
 
-## 🔌 API Endpoints
+##  API Endpoints
 
 ### Authentication
 | Method | Endpoint | Description |
@@ -269,7 +269,7 @@ days/
 
 ---
 
-## 🔐 Security Features
+##  Security Features
 
 ### Authentication & Authorization
 ✅ **Google OAuth 2.0** — Secure identity verification  
@@ -278,19 +278,19 @@ days/
 ✅ **Session Validation** — Firebase token verification on every request  
 
 ### Data Protection
-✅ **Firestore Security Rules** — Enforce access control in database  
-✅ **HTTPS Only** — All communication encrypted  
-✅ **No Hardcoded Secrets** — Service keys securely encoded  
-✅ **Input Validation** — All user inputs sanitized  
+ **Firestore Security Rules** — Enforce access control in database  
+ **HTTPS Only** — All communication encrypted  
+ **No Hardcoded Secrets** — Service keys securely encoded  
+ **Input Validation** — All user inputs sanitized  
 
 ### Testing
-✅ **D3 Permission Test** — Verifies users can't delete others' bookings  
-✅ **Access Control Tests** — Room deletion only by creator  
-✅ **Input Boundary Tests** — Empty names, invalid times rejected  
+ **D3 Permission Test** — Verifies users can't delete others' bookings  
+ **Access Control Tests** — Room deletion only by creator  
+ **Input Boundary Tests** — Empty names, invalid times rejected  
 
 ---
 
-## 📊 Key Functions
+##  Key Functions
 
 ### Service Layer (main.py)
 
@@ -325,7 +325,7 @@ get_user_profile(user_id, email, name)    # Create/fetch user profile
 
 ---
 
-## 🚀 Deployment
+##  Deployment
 
 ### Live Demo
 **URL:** http://207.175.34.40:8000  
@@ -354,21 +354,21 @@ heroku open
 
 ---
 
-## 📚 Academic Context
+##  Academic Context
 
 **Module:** B9IS123 Programming for Information Systems  
 **Assessment:** CRUD System with Test Suite  
 **Learning Outcomes:**
-- ✅ Design & implement CRUD operations
-- ✅ Write comprehensive unit tests with mocks
-- ✅ Integrate third-party authentication (OAuth)
-- ✅ Use cloud databases (Firestore)
-- ✅ Develop responsive web interfaces
-- ✅ Implement access control & security
+-  Design & implement CRUD operations
+-  Write comprehensive unit tests with mocks
+-  Integrate third-party authentication (OAuth)
+-  Use cloud databases (Firestore)
+-  Develop responsive web interfaces
+-  Implement access control & security
 
 ---
 
-## 🐛 Troubleshooting
+##  Troubleshooting
 
 ### Issue: Firebase Connection Failed
 **Solution:** Verify GCP credentials and network connectivity
@@ -391,7 +391,7 @@ python test_room_booking_system.py -v
 
 ---
 
-## 📝 Development Notes
+##  Development Notes
 
 ### Git Commit History
 - **45+ commits** demonstrating incremental development
@@ -406,16 +406,16 @@ python test_room_booking_system.py -v
 - **Test coverage** for all CRUD operations
 
 ### Future Enhancements
-- 📱 Mobile app (React Native)
-- 🤖 AI-powered scheduling assistant
-- 📧 Email reminders & calendar sync
-- 🌍 Multi-timezone support
-- 🔔 Real-time notifications (WebSocket)
-- 📊 Advanced analytics & reporting
+-  Mobile app (React Native)
+-  AI-powered scheduling assistant
+-  Email reminders & calendar sync
+-  Multi-timezone support
+-  Real-time notifications (WebSocket)
+-  Advanced analytics & reporting
 
 ---
 
-## 👤 Author
+##  Author
 
 **Yogesh Reddy**  
 MSc Information Systems with Computing  
