@@ -272,10 +272,10 @@ days/
 ##  Security Features
 
 ### Authentication & Authorization
-✅ **Google OAuth 2.0** — Secure identity verification  
-✅ **User-scoped Queries** — Bookings filtered by `user_id` at database level  
-✅ **Permission Checks** — Only owners can modify/delete their bookings  
-✅ **Session Validation** — Firebase token verification on every request  
+ **Google OAuth 2.0** — Secure identity verification  
+ **User-scoped Queries** — Bookings filtered by `user_id` at database level  
+ **Permission Checks** — Only owners can modify/delete their bookings  
+ **Session Validation** — Firebase token verification on every request  
 
 ### Data Protection
  **Firestore Security Rules** — Enforce access control in database  
