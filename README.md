@@ -424,24 +424,3 @@ Student ID: 20101649
 
 **GitHub:** [github.com/atyogesh501](https://github.com/atyogesh501)  
 **LinkedIn:** [linkedin.com/in/atyogesh501](https://linkedin.com/in/atyogesh501)
-
----
-
-## 📄 License
-
-This project is submitted as coursework for Dublin Business School. All rights reserved for educational purposes.
-
----
-
-## 📞 Support
-
-For issues, questions, or feedback:
-1. Check the **Troubleshooting** section above
-2. Review test output: `python test_room_booking_system.py -v`
-3. Contact: [DBS Module Tutor]
-
----
-
-**Last Updated:** July 2025  
-**Version:** 1.0.0  
-**Status:** Submission Ready ✅
