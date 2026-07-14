@@ -415,6 +415,11 @@ python test_room_booking_system.py -v
 
 ---
 
+## Youtube Referances used for project 
+-  Python tutorials: https://youtube.com/playlist?list=PLNgoFk5SYUglQOaXSY8lAlPXmK6tQBHaw&si=SwBOlIlIzivOvmtQ
+-  Google Firebase : https://youtu.be/d4leg9WwS8M?si=Ft0BLWSSlUUZnI91
+- Google OAuth 2.0 : https://youtu.be/tKErrnfg9Q4?si=dyUS3G0V-CnIzV76
+
 ##  Author
 
 **Yogesh Reddy**  
