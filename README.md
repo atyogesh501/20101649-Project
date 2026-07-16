@@ -144,7 +144,7 @@ OK
 ##  Project Structure
 
 
-team-connect-app
+team-connect-app/
 
 ├── main.py
 │   This is the main Flask application where the routes, booking logic, and
