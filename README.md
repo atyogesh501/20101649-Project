@@ -142,28 +142,17 @@ OK
 ---
 
 ##  Project Structure
-
+Project Structure
 
 team-connect-app/
-
+│
 ├── main.py
-│   This is the main Flask application where the routes, booking logic, and
-│   Firestore database operations are implemented.
-│
 ├── test_room_booking_system.py
-│   Contains the unit tests written to check the booking system functions.
-│
 ├── requirements.txt
-│   List of Python packages needed to run the project.
-│
 ├── README.md
-│   Basic instructions about the project and how to run it.
-│
 ├── .gitignore
-│   Specifies files and folders that should not be tracked by Git.
 │
 ├── templates/
-│   Stores all HTML pages used by the application.
 │   ├── index.html
 │   ├── room.html
 │   ├── edit_booking.html
@@ -171,13 +160,11 @@ team-connect-app/
 │   └── about.html
 │
 ├── static/
-│   Contains the static resources used by the website.
 │   ├── css/
 │   ├── js/
 │   └── images/
 │
 └── .git/
-    Git repository created to manage version control during development.
 ---
 
 ##  Architecture Overview
