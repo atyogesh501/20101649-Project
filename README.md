@@ -4,7 +4,7 @@ A modern, scalable **Room Booking System** built with Flask and Firebase. Team C
 
 **Module:** B9IS123 Programming for Information Systems  
 **Institution:** Dublin Business School  
-**Status:** Production Ready
+
 
 ---
 
@@ -143,88 +143,90 @@ OK
 
 ##  Project Structure
 
-```
-team-connect-app/
-│
-├── main.py                           # Flask application & Firestore logic
-├── test_room_booking_system.py       # CRUD test suite (21 tests)
-├── requirements.txt                  # Python dependencies
-├── README.md                          # Project documentation
-├── .gitignore                         # Git ignore rules
-│
-├── templates/                         # Jinja2 HTML templates
-│   ├── index.html                     # Home page & room list
-│   ├── room.html                      # Room details & calendar
-│   ├── edit_booking.html              # Edit/reschedule booking
-│   ├── profile.html                   # User profile & statistics
-│   └── about.html                     # System information
-│
-├── static/                            # Frontend assets
-│   ├── css/                           # Stylesheets
-│   ├── js/                            # JavaScript
-│   └── images/                        # Icons & images
-│
-└── .git/                              # Version control (45+ commits)
-```
 
+team-connect-app
+
+├── main.py
+│   This is the main Flask application where the routes, booking logic, and
+│   Firestore database operations are implemented.
+│
+├── test_room_booking_system.py
+│   Contains the unit tests written to check the booking system functions.
+│
+├── requirements.txt
+│   List of Python packages needed to run the project.
+│
+├── README.md
+│   Basic instructions about the project and how to run it.
+│
+├── .gitignore
+│   Specifies files and folders that should not be tracked by Git.
+│
+├── templates/
+│   Stores all HTML pages used by the application.
+│   ├── index.html
+│   ├── room.html
+│   ├── edit_booking.html
+│   ├── profile.html
+│   └── about.html
+│
+├── static/
+│   Contains the static resources used by the website.
+│   ├── css/
+│   ├── js/
+│   └── images/
+│
+└── .git/
+    Git repository created to manage version control during development.
 ---
 
 ##  Architecture Overview
 
 ### Technology Stack
-```
-Frontend          Middleware         Backend            Database
-─────────         ──────────         ───────            ────────
-HTML/CSS/JS  →   Flask 3.1.0    →   Service Layer  →  Firestore
-jQuery           Jinja2            (CRUD functions)     (NoSQL)
-               Google OAuth                              ↓
-                                                     Cloud Storage
-```
+The application follows a simple four-layer architecture.
+
+User Interface (HTML, CSS, JavaScript, jQuery)
+        ↓
+Flask Application (Routes, Jinja2 Templates, Google OAuth)
+        ↓
+Application Logic (Booking and User Management)
+        ↓
+Google Firestore Database
 
 ### Database Schema
 
 **Firestore Collections:**
 
-```
-users/
-├── {user_id}
-│   ├── user_id (string)
-│   ├── email (string)
-│   ├── display_name (string)
-│   ├── photo_url (string)
-│   ├── rooms_created (int)
-│   ├── bookings_created (int)
-│   ├── bookings_deleted (int)
-│   ├── bookings_edited (int)
-│   └── created_at (timestamp)
+Database Collections
 
-rooms/
-├── {room_id}
-│   ├── name (string)
-│   ├── created_by (string - user_id)
-│   ├── created_by_email (string)
-│   └── created_at (timestamp)
+The project uses four main Firestore collections to store the application data.
 
-bookings/
-├── {booking_id}
-│   ├── day_id (string - FK to days)
-│   ├── room_id (string - FK to rooms)
-│   ├── room_name (string)
-│   ├── meeting_name (string)
-│   ├── date (string - YYYY-MM-DD)
-│   ├── start_time (string - HH:MM)
-│   ├── end_time (string - HH:MM)
-│   ├── user_id (string - FK to users)
-│   ├── user_email (string)
-│   ├── created_at (timestamp)
-│   └── updated_at (timestamp)
+1. Users
+   - User ID
+   - Email
+   - Display name
+   - Profile photo
+   - Booking statistics
+   - Date created
 
-days/
-├── {day_id}
-│   ├── room_id (string - FK to rooms)
-│   ├── date (string - YYYY-MM-DD)
-│   └── bookings (array of booking_ids)
-```
+2. Rooms
+   - Room name
+   - Creator details
+   - Date created
+
+3. Bookings
+   - Room
+   - Meeting name
+   - Date
+   - Start time
+   - End time
+   - User details
+   - Created and updated timestamps
+
+4. Days
+   - Room
+   - Date
+   - List of bookings for that day
 
 ---
 
