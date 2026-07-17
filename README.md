@@ -142,29 +142,28 @@ OK
 ---
 
 ##  Project Structure
-Project Structure
-
 team-connect-app/
 │
-├── main.py
-├── test_room_booking_system.py
-├── requirements.txt
-├── README.md
-├── .gitignore
+├── main.py                           - Flask application & Firestore logic
+├── test_room_booking_system.py       - CRUD test suite (21 tests)
+├── requirements.txt                  - Python dependencies
+├── README.md                          - Project documentation
+├── .gitignore                         - Git ignore rules
 │
-├── templates/
-│   ├── index.html
-│   ├── room.html
-│   ├── edit_booking.html
-│   ├── profile.html
-│   └── about.html
+├── templates/                         - Jinja2 HTML templates
+│   ├── index.html                     - Home page & room list
+│   ├── room.html                      - Room details & calendar
+│   ├── edit_booking.html              - Edit/reschedule booking
+│   ├── profile.html                   - User profile & statistics
+│   └── about.html                     - System information
 │
-├── static/
-│   ├── css/
-│   ├── js/
-│   └── images/
+├── static/                            - Frontend assets
+│   ├── css/                           - Stylesheets
+│   ├── js/                            - JavaScript
+│   └── images/                        - Icons & images
 │
-└── .git/
+└── .git/                              
+
 ---
 
 ##  Architecture Overview
@@ -408,6 +407,12 @@ python test_room_booking_system.py -v
 -  Python tutorials: https://youtube.com/playlist?list=PLNgoFk5SYUglQOaXSY8lAlPXmK6tQBHaw&si=SwBOlIlIzivOvmtQ
 -  Google Firebase : https://youtu.be/d4leg9WwS8M?si=Ft0BLWSSlUUZnI91
 - Google OAuth 2.0 : https://youtu.be/tKErrnfg9Q4?si=dyUS3G0V-CnIzV76
+
+## Chat Referances used for project
+ login landing page for signed-out visitors : https://share.gemini.google/uPn1oEnIgCu5
+Firebase: https://share.gemini.google/ZdnBCoNDLCoL
+service functions,HTTP route handlers : https://share.gemini.google/LHUIwXH75byT
+Bookings section and form integrations : https://share.gemini.google/VlqumCD829Hf
 
 ##  Author
 
