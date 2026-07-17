@@ -410,9 +410,9 @@ python test_room_booking_system.py -v
 
 ## Chat Referances used for project
  login landing page for signed-out visitors : https://share.gemini.google/uPn1oEnIgCu5
-Firebase: https://share.gemini.google/ZdnBCoNDLCoL
-service functions,HTTP route handlers : https://share.gemini.google/LHUIwXH75byT
-Bookings section and form integrations : https://share.gemini.google/VlqumCD829Hf
+ Firebase                                   :https://share.gemini.google/ZdnBCoNDLCoL
+ service functions,HTTP route handlers      : https://share.gemini.google/LHUIwXH75byT
+ Bookings section and form integrations     : https://share.gemini.google/VlqumCD829Hf
 
 ##  Author
 
